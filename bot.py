@@ -6,7 +6,7 @@ import pickle
 import requests
 
 # 🔐 Telegram config
-TELEGRAM_TOKEN = 'TU_TOKEN_AQUI'8264378285:AAGGX1rMu9q_4EwMHk7OjThAHdyN7z1Tujc
+TELEGRAM_TOKEN = 'TU_TOKEN_AQUI 7546608274:AAEoTxD3eZcn7YpwGuG6wbTyfUXOHM33Ctk
 CHAT_ID = 'TU_CHAT_ID_AQUI'1625697501
 
 def enviar_telegram(mensaje):
