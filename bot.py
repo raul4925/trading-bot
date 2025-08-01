@@ -1,61 +1,67 @@
-from flask import Flask, request
-import telebot
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 import time
+import pickle
+import requests
 
-# === CONFIGURACIÓN ===
-TELEGRAM_TOKEN = '7382546499:AAFuVG7ZKoahhksxxTIjbh59hR56jlv_tnY'
-TELEGRAM_CHAT_ID = '1625697501'
-POCKET_URL = "https://pocketoption.com/es/"
+# 🔐 Telegram config
+TELEGRAM_TOKEN = 'TU_TOKEN_AQUI'8264378285:AAGGX1rMu9q_4EwMHk7OjThAHdyN7z1Tujc
+CHAT_ID = 'TU_CHAT_ID_AQUI'1625697501
 
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
-app = Flask(__name__)
+def enviar_telegram(mensaje):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": mensaje}
+    try:
+        requests.post(url, json=payload)
+    except Exception as e:
+        print("Error al enviar Telegram:", e)
 
-# === INICIAR SELENIUM CON COOKIES PERSISTENTES ===
 def iniciar_driver():
-    chrome_options = Options()
-    chrome_options.add_argument("--user-data-dir=selenium")  # Guarda sesión
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get(POCKET_URL)
-    time.sleep(5)
+    options = webdriver.ChromeOptions()
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--headless')
+    driver = webdriver.Chrome(options=options)
+    driver.get("https://pocketoption.com/es/login")
+
+    # Cargar cookies
+    try:
+        with open("cookies.pkl", "rb") as f:
+            cookies = pickle.load(f)
+            for cookie in cookies:
+                driver.add_cookie(cookie)
+        driver.refresh()
+    except Exception as e:
+        print("No se pudieron cargar cookies:", e)
+
     return driver
 
-# === EJECUTAR OPERACIÓN EN POCKET OPTION ===
-def ejecutar_operacion(driver, tipo):
-    try:
-        if tipo.upper() == "CALL":
-            boton = driver.find_element(By.XPATH, '//button[contains(text(), "COMPRAR")]')
-            boton.click()
-            bot.send_message(TELEGRAM_CHAT_ID, "✅ Operación ejecutada: CALL")
-        elif tipo.upper() == "PUT":
-            boton = driver.find_element(By.XPATH, '//button[contains(text(), "VENDER")]')
-            boton.click()
-            bot.send_message(TELEGRAM_CHAT_ID, "✅ Operación ejecutada: PUT")
-        else:
-            bot.send_message(TELEGRAM_CHAT_ID, f"⚠️ Tipo de operación desconocido: {tipo}")
-    except Exception as e:
-        bot.send_message(TELEGRAM_CHAT_ID, f"❌ Error al ejecutar operación: {e}")
+def ejecutar_operacion(data):
+    par = data.get('par', 'EURUSD')
+    direccion = data.get('direccion', 'compra')
+    tiempo = data.get('tiempo', 1)
 
-# === WEBHOOK PARA RECIBIR SEÑALES ===
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    data = request.json
-    activo = data.get("activo")
-    tipo = data.get("tipo")
-    tiempo = data.get("tiempo")
-
-    mensaje = f"📩 Señal recibida:\nActivo: {activo}\nTipo: {tipo}\nTiempo: {tiempo}"
-    bot.send_message(TELEGRAM_CHAT_ID, mensaje)
+    mensaje = f"Ejecutando operación: {direccion.upper()} en {par} por {tiempo} minuto(s)"
+    print(mensaje)
+    enviar_telegram(mensaje)
 
     driver = iniciar_driver()
-    ejecutar_operacion(driver, tipo)
+    time.sleep(5)
+
+    if direccion == 'compra':
+        boton_xpath = '//*[@id="deal-btn-call"]'
+    else:
+        boton_xpath = '//*[@id="deal-btn-put"]'
+
+    try:
+        boton = driver.find_element(By.XPATH, boton_xpath)
+        boton.click()
+        print("Operación ejecutada correctamente.")
+        enviar_telegram("✅ Operación ejecutada correctamente.")
+    except Exception as e:
+        print("Error al ejecutar operación:", e)
+        enviar_telegram("❌ Error al ejecutar operación.")
+
+    time.sleep(3)
     driver.quit()
-
-    return "OK", 200
-
-# === INICIO DEL SERVIDOR ===
-if __name__ == '__main__':
-    bot.send_message(TELEGRAM_CHAT_ID, "🚀 Bot iniciado y esperando señales...")
-    app.run(host='0.0.0.0', port=5000)
