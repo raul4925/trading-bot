@@ -1,3 +1,6 @@
+def ejecutar_operacion(data):
+    print("🔍 Ejecutar operación activado")
+    print("Datos recibidos:", data)
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -6,8 +9,9 @@ import pickle
 import requests
 
 # 🔐 Telegram config
-TELEGRAM_TOKEN = 'TU_TOKEN_AQUI 7546608274:AAEoTxD3eZcn7YpwGuG6wbTyfUXOHM33Ctk
-CHAT_ID = 'TU_CHAT_ID_AQUI'1625697501
+
+TELEGRAM_TOKEN = '7546682724:AAEoTx03eZcn7pWGu6GwbTyfUXOHM33Ctk'
+CHAT_ID = '1625697501'
 
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
